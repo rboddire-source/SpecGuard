@@ -312,3 +312,13 @@ footer span {
         flex-direction: column;
     }
 }
+button.secondary-button,
+button.primary-link {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.button-link {
+    border: none;
+    background: transparent;
+}

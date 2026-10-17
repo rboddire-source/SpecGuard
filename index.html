@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SpecGuard | Specification Change Detection</title>
+
+    <link rel="stylesheet" href="static/style.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+    <a href="#" class="brand" onclick="showComparePage()">
+        <div class="brand-icon">S</div>
+
+        <div>
+            <span class="brand-name">SpecGuard</span>
+            <span class="brand-tagline">
+                Specification Intelligence
+            </span>
+        </div>
+    </a>
+
+    <div class="nav-links">
+        <a href="#"
+           id="compareNav"
+           class="active"
+           onclick="showComparePage()">
+            Compare
+        </a>
+
+        <a href="#"
+           id="historyNav"
+           onclick="showHistoryPage()">
+            History
+        </a>
+    </div>
+</nav>
+
+
+<main>
+
+    <!-- COMPARE PAGE -->
+
+    <div id="comparePage">
+
+        <section class="hero">
+
+            <div class="hero-badge">
+                REQUIREMENT CHANGE DETECTION
+            </div>
+
+            <h1>
+                Specification changes,
+                <span>made clear.</span>
+            </h1>
+
+            <p>
+                Compare requirement versions, identify changes,
+                and maintain a local history of your specifications.
+            </p>
+
+        </section>
+
+
+        <section class="comparison-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>Compare specifications</h2>
+
+                    <p>
+                        Upload two text-based requirement files.
+                    </p>
+                </div>
+
+                <div class="step">
+                    NEW COMPARISON
+                </div>
+
+            </div>
+
+
+            <form id="comparisonForm">
+
+                <div class="upload-grid">
+
+                    <label class="upload-panel">
+
+                        <span class="file-label">
+                            PREVIOUS VERSION
+                        </span>
+
+                        <div class="upload-icon">↑</div>
+
+                        <strong>
+                            Choose old specification
+                        </strong>
+
+                        <span class="upload-description">
+                            Select a .txt requirement file
+                        </span>
+
+                        <input
+                            type="file"
+                            id="oldFile"
+                            accept=".txt"
+                            required
+                        >
+
+                    </label>
+
+
+                    <div class="arrow">
+                        →
+                    </div>
+
+
+                    <label class="upload-panel">
+
+                        <span class="file-label">
+                            CURRENT VERSION
+                        </span>
+
+                        <div class="upload-icon">↑</div>
+
+                        <strong>
+                            Choose new specification
+                        </strong>
+
+                        <span class="upload-description">
+                            Select the updated .txt file
+                        </span>
+
+                        <input
+                            type="file"
+                            id="newFile"
+                            accept=".txt"
+                            required
+                        >
+
+                    </label>
+
+                </div>
+
+
+                <button
+                    class="compare-button"
+                    type="submit"
+                >
+                    Compare Versions
+                    <span>→</span>
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <section class="features">
+
+            <div>
+                <span>01</span>
+
+                <h3>Detect Changes</h3>
+
+                <p>
+                    Identify added, removed, changed,
+                    and unchanged requirements.
+                </p>
+            </div>
+
+
+            <div>
+                <span>02</span>
+
+                <h3>Review Clearly</h3>
+
+                <p>
+                    See previous and current requirements
+                    side-by-side.
+                </p>
+            </div>
+
+
+            <div>
+                <span>03</span>
+
+                <h3>Track History</h3>
+
+                <p>
+                    Keep previous comparisons available
+                    locally in your browser.
+                </p>
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- RESULTS PAGE -->
+
+    <div id="resultsPage" style="display: none;">
+
+        <section class="page-heading">
+
+            <div>
+                <div class="hero-badge">
+                    COMPARISON COMPLETE
+                </div>
+
+                <h1>
+                    Specification changes
+                </h1>
+
+                <p>
+                    Review the differences detected between
+                    the previous and current versions.
+                </p>
+            </div>
+
+
+            <button
+                class="secondary-button"
+                onclick="showComparePage()"
+            >
+                + New Comparison
+            </button>
+
+        </section>
+
+
+        <section class="summary">
+
+            <div>
+                <strong id="changedCount">0</strong>
+                <span>Changed</span>
+            </div>
+
+            <div>
+                <strong id="addedCount">0</strong>
+                <span>Added</span>
+            </div>
+
+            <div>
+                <strong id="removedCount">0</strong>
+                <span>Removed</span>
+            </div>
+
+            <div>
+                <strong id="unchangedCount">0</strong>
+                <span>Unchanged</span>
+            </div>
+
+        </section>
+
+
+        <section class="results-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>Change details</h2>
+
+                    <p id="comparisonFileNames">
+                        Previous and current requirements
+                        shown side-by-side.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Previous Requirement</th>
+                            <th>Current Requirement</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="resultsBody">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <div class="bottom-actions">
+
+            <button
+                class="secondary-button"
+                onclick="showComparePage()"
+            >
+                Compare Another Version
+            </button>
+
+
+            <div class="result-actions">
+
+                <button
+                    class="secondary-button"
+                    onclick="downloadCurrentCSV()"
+                >
+                    Download CSV
+                </button>
+
+
+                <button
+                    class="primary-link button-link"
+                    onclick="showHistoryPage()"
+                >
+                    View History →
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- HISTORY PAGE -->
+
+    <div id="historyPage" style="display: none;">
+
+        <section class="page-heading">
+
+            <div>
+                <div class="hero-badge">
+                    AUDIT TRAIL
+                </div>
+
+                <h1>
+                    Comparison history
+                </h1>
+
+                <p>
+                    Review specification comparisons saved
+                    in this browser.
+                </p>
+            </div>
+
+
+            <button
+                class="secondary-button"
+                onclick="showComparePage()"
+            >
+                + New Comparison
+            </button>
+
+        </section>
+
+
+        <section class="results-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>
+                        Previous comparisons
+                    </h2>
+
+                    <p>
+                        History is stored locally in
+                        your browser.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Previous File</th>
+                            <th>Current File</th>
+                            <th>Changed</th>
+                            <th>Added</th>
+                            <th>Removed</th>
+                            <th>Unchanged</th>
+                            <th>Created</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="historyBody">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+
+<footer>
+    <span>SpecGuard</span>
+
+    <p>
+        Requirement change intelligence.
+    </p>
+</footer>
+
+
+<script>
+const SIMILARITY_THRESHOLD = 0.55;
+
+let currentComparison = null;
+
+
+/*
+    Similarity implementation for the static
+    GitHub Pages version.
+
+    This uses normalized Levenshtein similarity.
+*/
+function similarity(text1, text2) {
+
+    const a = text1.toLowerCase().trim();
+    const b = text2.toLowerCase().trim();
+
+    if (a === b) {
+        return 1;
+    }
+
+    const matrix = [];
+
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= b.length; i++) {
+
+        for (let j = 1; j <= a.length; j++) {
+
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+
+                matrix[i][j] =
+                    matrix[i - 1][j - 1];
+
+            } else {
+
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+
+    const distance =
+        matrix[b.length][a.length];
+
+    const maxLength =
+        Math.max(a.length, b.length);
+
+    if (maxLength === 0) {
+        return 1;
+    }
+
+    return 1 - (distance / maxLength);
+}
+
+
+function compareRequirements(
+    oldRequirements,
+    newRequirements
+) {
+
+    const results = [];
+
+    const matchedNew = new Set();
+    const matchedOld = new Set();
+
+
+    /*
+        PASS 1:
+        Exact matches
+    */
+    oldRequirements.forEach(
+        (oldRequirement, oldIndex) => {
+
+            for (
+                let newIndex = 0;
+                newIndex < newRequirements.length;
+                newIndex++
+            ) {
+
+                if (matchedNew.has(newIndex)) {
+                    continue;
+                }
+
+                if (
+                    oldRequirement.trim() ===
+                    newRequirements[newIndex].trim()
+                ) {
+
+                    results.push({
+                        status: "UNCHANGED",
+                        old: oldRequirement,
+                        new: newRequirements[newIndex],
+                        similarity: 1
+                    });
+
+                    matchedOld.add(oldIndex);
+                    matchedNew.add(newIndex);
+
+                    break;
+                }
+            }
+        }
+    );
+
+
+    /*
+        PASS 2:
+        Similar requirements
+    */
+    oldRequirements.forEach(
+        (oldRequirement, oldIndex) => {
+
+            if (matchedOld.has(oldIndex)) {
+                return;
+            }
+
+            let bestScore = 0;
+            let bestNewIndex = null;
+
+
+            newRequirements.forEach(
+                (newRequirement, newIndex) => {
+
+                    if (matchedNew.has(newIndex)) {
+                        return;
+                    }
+
+                    const score = similarity(
+                        oldRequirement,
+                        newRequirement
+                    );
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestNewIndex = newIndex;
+                    }
+                }
+            );
+
+
+            if (
+                bestNewIndex !== null &&
+                bestScore >= SIMILARITY_THRESHOLD
+            ) {
+
+                results.push({
+                    status: "CHANGED",
+                    old: oldRequirement,
+                    new: newRequirements[bestNewIndex],
+                    similarity:
+                        Number(bestScore.toFixed(2))
+                });
+
+                matchedNew.add(bestNewIndex);
+
+            } else {
+
+                results.push({
+                    status: "REMOVED",
+                    old: oldRequirement,
+                    new: null,
+                    similarity: 0
+                });
+            }
+        }
+    );
+
+
+    /*
+        PASS 3:
+        Remaining new requirements
+    */
+    newRequirements.forEach(
+        (newRequirement, newIndex) => {
+
+            if (!matchedNew.has(newIndex)) {
+
+                results.push({
+                    status: "ADDED",
+                    old: null,
+                    new: newRequirement,
+                    similarity: 0
+                });
+            }
+        }
+    );
+
+
+    return results;
+}
+
+
+function buildSummary(results) {
+
+    return {
+        changed:
+            results.filter(
+                result =>
+                    result.status === "CHANGED"
+            ).length,
+
+        added:
+            results.filter(
+                result =>
+                    result.status === "ADDED"
+            ).length,
+
+        removed:
+            results.filter(
+                result =>
+                    result.status === "REMOVED"
+            ).length,
+
+        unchanged:
+            results.filter(
+                result =>
+                    result.status === "UNCHANGED"
+            ).length
+    };
+}
+
+
+function parseRequirements(text) {
+
+    return text
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+}
+
+
+function escapeHTML(value) {
+
+    if (value === null || value === undefined) {
+        return "—";
+    }
+
+    const div = document.createElement("div");
+
+    div.textContent = value;
+
+    return div.innerHTML;
+}
+
+
+document
+    .getElementById("comparisonForm")
+    .addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const oldFile =
+                document.getElementById("oldFile")
+                    .files[0];
+
+            const newFile =
+                document.getElementById("newFile")
+                    .files[0];
+
+
+            if (!oldFile || !newFile) {
+
+                alert(
+                    "Please select both specification files."
+                );
+
+                return;
+            }
+
+
+            if (
+                !oldFile.name.toLowerCase().endsWith(".txt") ||
+                !newFile.name.toLowerCase().endsWith(".txt")
+            ) {
+
+                alert(
+                    "Only .txt files are supported."
+                );
+
+                return;
+            }
+
+
+            const oldText =
+                await oldFile.text();
+
+            const newText =
+                await newFile.text();
+
+
+            const oldRequirements =
+                parseRequirements(oldText);
+
+            const newRequirements =
+                parseRequirements(newText);
+
+
+            if (
+                oldRequirements.length === 0 ||
+                newRequirements.length === 0
+            ) {
+
+                alert(
+                    "Specification files cannot be empty."
+                );
+
+                return;
+            }
+
+
+            const results =
+                compareRequirements(
+                    oldRequirements,
+                    newRequirements
+                );
+
+
+            const summary =
+                buildSummary(results);
+
+
+            currentComparison = {
+                id: Date.now(),
+                oldFilename: oldFile.name,
+                newFilename: newFile.name,
+                createdAt:
+                    new Date().toLocaleString(),
+                summary: summary,
+                results: results
+            };
+
+
+            saveHistory(currentComparison);
+
+            renderResults(currentComparison);
+
+            showResultsPage();
+        }
+    );
+
+
+function renderResults(comparison) {
+
+    document.getElementById(
+        "changedCount"
+    ).textContent =
+        comparison.summary.changed;
+
+    document.getElementById(
+        "addedCount"
+    ).textContent =
+        comparison.summary.added;
+
+    document.getElementById(
+        "removedCount"
+    ).textContent =
+        comparison.summary.removed;
+
+    document.getElementById(
+        "unchangedCount"
+    ).textContent =
+        comparison.summary.unchanged;
+
+
+    document.getElementById(
+        "comparisonFileNames"
+    ).textContent =
+        comparison.oldFilename +
+        " → " +
+        comparison.newFilename;
+
+
+    const body =
+        document.getElementById(
+            "resultsBody"
+        );
+
+
+    body.innerHTML = "";
+
+
+    comparison.results.forEach(
+        result => {
+
+            const row =
+                document.createElement("tr");
+
+
+            row.innerHTML = `
+                <td>
+                    <span class="status-badge ${result.status.toLowerCase()}">
+                        ${escapeHTML(result.status)}
+                    </span>
+                </td>
+
+                <td>
+                    ${escapeHTML(result.old)}
+                </td>
+
+                <td>
+                    ${escapeHTML(result.new)}
+                </td>
+            `;
+
+
+            body.appendChild(row);
+        }
+    );
+}
+
+
+function getHistory() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "specguardHistory"
+            )
+        ) || [];
+
+    } catch (error) {
+
+        return [];
+    }
+}
+
+
+function saveHistory(comparison) {
+
+    const history =
+        getHistory();
+
+
+    history.unshift(comparison);
+
+
+    /*
+        Keep the most recent 50 comparisons
+        so browser storage does not grow forever.
+    */
+    const limitedHistory =
+        history.slice(0, 50);
+
+
+    localStorage.setItem(
+        "specguardHistory",
+        JSON.stringify(limitedHistory)
+    );
+}
+
+
+function renderHistory() {
+
+    const history =
+        getHistory();
+
+
+    const body =
+        document.getElementById(
+            "historyBody"
+        );
+
+
+    body.innerHTML = "";
+
+
+    if (history.length === 0) {
+
+        body.innerHTML = `
+            <tr>
+                <td colspan="9">
+                    No comparisons have been saved yet.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    history.forEach(
+        (comparison, index) => {
+
+            const row =
+                document.createElement("tr");
+
+
+            row.innerHTML = `
+                <td>
+                    #${history.length - index}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        comparison.oldFilename
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        comparison.newFilename
+                    )}
+                </td>
+
+                <td>
+                    ${comparison.summary.changed}
+                </td>
+
+                <td>
+                    ${comparison.summary.added}
+                </td>
+
+                <td>
+                    ${comparison.summary.removed}
+                </td>
+
+                <td>
+                    ${comparison.summary.unchanged}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        comparison.createdAt
+                    )}
+                </td>
+
+                <td>
+                    <button
+                        class="primary-link button-link"
+                        onclick="openHistory(${comparison.id})"
+                    >
+                        View →
+                    </button>
+                </td>
+            `;
+
+
+            body.appendChild(row);
+        }
+    );
+}
+
+
+function openHistory(id) {
+
+    const history =
+        getHistory();
+
+
+    const comparison =
+        history.find(
+            item => item.id === id
+        );
+
+
+    if (!comparison) {
+        return;
+    }
+
+
+    currentComparison =
+        comparison;
+
+
+    renderResults(
+        comparison
+    );
+
+
+    showResultsPage();
+}
+
+
+function downloadCurrentCSV() {
+
+    if (!currentComparison) {
+        return;
+    }
+
+
+    const rows = [
+
+        [
+            "SpecGuard Comparison Report"
+        ],
+
+        [
+            "Previous File",
+            currentComparison.oldFilename
+        ],
+
+        [
+            "Current File",
+            currentComparison.newFilename
+        ],
+
+        [
+            "Created",
+            currentComparison.createdAt
+        ],
+
+        [],
+
+        [
+            "Status",
+            "Previous Requirement",
+            "Current Requirement",
+            "Similarity"
+        ]
+    ];
+
+
+    currentComparison.results.forEach(
+        result => {
+
+            rows.push([
+                result.status,
+                result.old || "",
+                result.new || "",
+                result.similarity
+            ]);
+        }
+    );
+
+
+    const csv =
+        rows
+            .map(
+                row =>
+                    row
+                        .map(csvEscape)
+                        .join(",")
+            )
+            .join("\n");
+
+
+    const blob =
+        new Blob(
+            [csv],
+            {
+                type:
+                    "text/csv;charset=utf-8;"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const link =
+        document.createElement("a");
+
+
+    link.href = url;
+
+    link.download =
+        "specguard_comparison.csv";
+
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+}
+
+
+function csvEscape(value) {
+
+    const text =
+        String(
+            value ?? ""
+        );
+
+
+    return (
+        '"' +
+        text.replace(
+            /"/g,
+            '""'
+        ) +
+        '"'
+    );
+}
+
+
+function hidePages() {
+
+    document.getElementById(
+        "comparePage"
+    ).style.display = "none";
+
+    document.getElementById(
+        "resultsPage"
+    ).style.display = "none";
+
+    document.getElementById(
+        "historyPage"
+    ).style.display = "none";
+
+
+    document.getElementById(
+        "compareNav"
+    ).classList.remove("active");
+
+    document.getElementById(
+        "historyNav"
+    ).classList.remove("active");
+}
+
+
+function showComparePage() {
+
+    hidePages();
+
+    document.getElementById(
+        "comparePage"
+    ).style.display = "block";
+
+    document.getElementById(
+        "compareNav"
+    ).classList.add("active");
+
+    window.scrollTo(0, 0);
+}
+
+
+function showResultsPage() {
+
+    hidePages();
+
+    document.getElementById(
+        "resultsPage"
+    ).style.display = "block";
+
+    document.getElementById(
+        "compareNav"
+    ).classList.add("active");
+
+    window.scrollTo(0, 0);
+}
+
+
+function showHistoryPage() {
+
+    hidePages();
+
+    renderHistory();
+
+    document.getElementById(
+        "historyPage"
+    ).style.display = "block";
+
+    document.getElementById(
+        "historyNav"
+    ).classList.add("active");
+
+    window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
