@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Comparison History | SpecGuard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <a href="/" class="brand">
+        <div class="brand-icon">S</div>
+
+        <div>
+            <span class="brand-name">SpecGuard</span>
+            <span class="brand-tagline">
+                Specification Intelligence
+            </span>
+        </div>
+    </a>
+
+    <div class="nav-links">
+        <a href="/">Compare</a>
+        <a href="/history" class="active">History</a>
+    </div>
+
+</nav>
+
+
+<main>
+
+    <section class="page-heading">
+
+        <div>
+            <div class="hero-badge">
+                AUDIT TRAIL
+            </div>
+
+            <h1>Comparison history</h1>
+
+            <p>
+                Review previous specification comparisons
+                and reopen their detected changes.
+            </p>
+        </div>
+
+        <a href="/" class="secondary-button">
+            + New Comparison
+        </a>
+
+    </section>
+
+
+    <section class="results-card">
+
+        <div class="card-header">
+
+            <div>
+                <h2>Previous comparisons</h2>
+
+                <p>
+                    Each record represents one complete
+                    specification comparison.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Previous File</th>
+                        <th>Current File</th>
+                        <th>Changed</th>
+                        <th>Added</th>
+                        <th>Removed</th>
+                        <th>Unchanged</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                {% for row in history %}
+
+                    <tr>
+
+                        <td>
+                            #{{ row["id"] }}
+                        </td>
+
+                        <td>
+                            {{ row["old_filename"] }}
+                        </td>
+
+                        <td>
+                            {{ row["new_filename"] }}
+                        </td>
+
+                        <td>
+                            {{ row["changed_count"] }}
+                        </td>
+
+                        <td>
+                            {{ row["added_count"] }}
+                        </td>
+
+                        <td>
+                            {{ row["removed_count"] }}
+                        </td>
+
+                        <td>
+                            {{ row["unchanged_count"] }}
+                        </td>
+
+                        <td>
+                            {{ row["created_at"] }}
+                        </td>
+
+                        <td>
+                            <a
+                                href="/history/{{ row['id'] }}"
+                                class="primary-link">
+
+                                View →
+
+                            </a>
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+                        <td colspan="9">
+                            No comparisons have been saved yet.
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <div class="bottom-actions">
+
+        <a href="/" class="secondary-button">
+            ← Back to Compare
+        </a>
+
+    </div>
+
+</main>
+
+
+<footer>
+
+    <span>SpecGuard</span>
+
+    <p>
+        Requirement change intelligence.
+    </p>
+
+</footer>
+
+</body>
+</html>

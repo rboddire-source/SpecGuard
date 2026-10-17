@@ -1,0 +1,6 @@
+Users must log in with email and password
+Two-factor authentication is required
+Password must contain at least 12 characters
+Session timeout is 60 minutes
+Maximum upload size is 25 MB
+Users can download reports

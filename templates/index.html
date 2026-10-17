@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SpecGuard | Specification Change Detection</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+
+        <a href="/" class="brand">
+
+            <div class="brand-icon">
+                S
+            </div>
+
+            <div>
+                <span class="brand-name">
+                    SpecGuard
+                </span>
+
+                <span class="brand-tagline">
+                    Specification Intelligence
+                </span>
+            </div>
+
+        </a>
+
+        <div class="nav-links">
+            <a href="/" class="active">
+                Compare
+            </a>
+
+            <a href="/history">
+                History
+            </a>
+        </div>
+
+    </nav>
+
+
+    <!-- MAIN CONTENT -->
+    <main>
+
+        <!-- HERO -->
+        <section class="hero">
+
+            <div class="hero-badge">
+                REQUIREMENT CHANGE DETECTION
+            </div>
+
+            <h1>
+                Specification changes,
+                <span>made clear.</span>
+            </h1>
+
+            <p>
+                Compare requirement versions, identify changes,
+                and maintain a searchable history of your specifications.
+            </p>
+
+        </section>
+
+
+        <!-- COMPARISON CARD -->
+        <section class="comparison-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>
+                        Compare specifications
+                    </h2>
+
+                    <p>
+                        Upload two text-based requirement files.
+                    </p>
+                </div>
+
+                <div class="step">
+                    NEW COMPARISON
+                </div>
+
+            </div>
+
+
+            <!-- UPLOAD FORM -->
+            <form action="/compare"
+                  method="POST"
+                  enctype="multipart/form-data">
+
+
+                <div class="upload-grid">
+
+
+                    <!-- OLD FILE -->
+                    <label class="upload-panel">
+
+                        <span class="file-label">
+                            PREVIOUS VERSION
+                        </span>
+
+                        <div class="upload-icon">
+                            ↑
+                        </div>
+
+                        <strong>
+                            Choose old specification
+                        </strong>
+
+                        <span class="upload-description">
+                            Select a .txt requirement file
+                        </span>
+
+                        <input
+                            type="file"
+                            name="old_file"
+                            accept=".txt"
+                            required
+                        >
+
+                    </label>
+
+
+                    <!-- ARROW -->
+                    <div class="arrow">
+                        →
+                    </div>
+
+
+                    <!-- NEW FILE -->
+                    <label class="upload-panel">
+
+                        <span class="file-label">
+                            CURRENT VERSION
+                        </span>
+
+                        <div class="upload-icon">
+                            ↑
+                        </div>
+
+                        <strong>
+                            Choose new specification
+                        </strong>
+
+                        <span class="upload-description">
+                            Select the updated .txt file
+                        </span>
+
+                        <input
+                            type="file"
+                            name="new_file"
+                            accept=".txt"
+                            required
+                        >
+
+                    </label>
+
+                </div>
+
+
+                <!-- COMPARE BUTTON -->
+                <button
+                    class="compare-button"
+                    type="submit">
+
+                    Compare Versions
+                    <span>→</span>
+
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- FEATURES -->
+        <section class="features">
+
+            <div>
+                <span>01</span>
+
+                <h3>
+                    Detect Changes
+                </h3>
+
+                <p>
+                    Identify added, removed, changed,
+                    and unchanged requirements.
+                </p>
+            </div>
+
+
+            <div>
+                <span>02</span>
+
+                <h3>
+                    Review Clearly
+                </h3>
+
+                <p>
+                    See previous and current requirements
+                    side-by-side.
+                </p>
+            </div>
+
+
+            <div>
+                <span>03</span>
+
+                <h3>
+                    Track History
+                </h3>
+
+                <p>
+                    Keep previous comparisons available
+                    for later review.
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <span>
+            SpecGuard
+        </span>
+
+        <p>
+            Requirement change intelligence.
+        </p>
+
+    </footer>
+
+
+</body>
+
+</html>

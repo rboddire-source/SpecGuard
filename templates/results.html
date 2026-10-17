@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Comparison Results | SpecGuard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+
+        <a href="/" class="brand">
+            <div class="brand-icon">S</div>
+
+            <div>
+                <span class="brand-name">
+                    SpecGuard
+                </span>
+
+                <span class="brand-tagline">
+                    Specification Intelligence
+                </span>
+            </div>
+        </a>
+
+        <div class="nav-links">
+            <a href="/" class="active">
+                Compare
+            </a>
+
+            <a href="/history">
+                History
+            </a>
+        </div>
+
+    </nav>
+
+
+    <main>
+
+        <!-- PAGE HEADING -->
+        <section class="page-heading">
+
+            <div>
+
+                <div class="hero-badge">
+                    COMPARISON COMPLETE
+                </div>
+
+                <h1>
+                    Specification changes
+                </h1>
+
+                <p>
+                    Review the differences detected between
+                    the previous and current versions.
+                </p>
+
+            </div>
+
+            <a href="/" class="secondary-button">
+                + New Comparison
+            </a>
+
+        </section>
+
+
+        <!-- FILE INFORMATION -->
+        <section class="comparison-files">
+
+            <div>
+                <span>
+                    PREVIOUS VERSION
+                </span>
+
+                <strong>
+                    {{ old_filename }}
+                </strong>
+            </div>
+
+
+            <div class="file-arrow">
+                →
+            </div>
+
+
+            <div>
+                <span>
+                    CURRENT VERSION
+                </span>
+
+                <strong>
+                    {{ new_filename }}
+                </strong>
+            </div>
+
+        </section>
+
+
+        <!-- SUMMARY -->
+        <section class="summary">
+
+            <div>
+                <strong>
+                    {{ summary.changed }}
+                </strong>
+
+                <span>
+                    Changed
+                </span>
+            </div>
+
+
+            <div>
+                <strong>
+                    {{ summary.added }}
+                </strong>
+
+                <span>
+                    Added
+                </span>
+            </div>
+
+
+            <div>
+                <strong>
+                    {{ summary.removed }}
+                </strong>
+
+                <span>
+                    Removed
+                </span>
+            </div>
+
+
+            <div>
+                <strong>
+                    {{ summary.unchanged }}
+                </strong>
+
+                <span>
+                    Unchanged
+                </span>
+            </div>
+
+        </section>
+
+
+        <!-- CHANGE DETAILS -->
+        <section class="results-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>
+                        Change details
+                    </h2>
+
+                    <p>
+                        Previous and current requirements
+                        shown side-by-side.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Previous Requirement</th>
+                            <th>Current Requirement</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for result in results %}
+
+                        <tr>
+
+                            <td>
+                                <span class="status-badge {{ result.status|lower }}">
+                                    {{ result.status }}
+                                </span>
+                            </td>
+
+
+                            <td>
+                                {{ result.old if result.old else "—" }}
+                            </td>
+
+
+                            <td>
+                                {{ result.new if result.new else "—" }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ACTION BUTTONS -->
+        <div class="bottom-actions">
+
+            <a href="/"
+               class="secondary-button">
+                Compare Another Version
+            </a>
+
+
+            <div class="result-actions">
+
+                <a href="/report/{{ run_id }}"
+                   class="secondary-button">
+                    Download CSV
+                </a>
+
+
+                <a href="/history"
+                   class="primary-link">
+                    View History →
+                </a>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <span>
+            SpecGuard
+        </span>
+
+        <p>
+            Requirement change intelligence.
+        </p>
+
+    </footer>
+
+</body>
+
+</html>

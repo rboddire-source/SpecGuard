@@ -1,0 +1,4 @@
+Users must log in with email and password
+Password must contain at least 12 characters
+Maximum upload size is 25 MB
+Users can download reports
