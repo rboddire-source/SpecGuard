@@ -20,10 +20,7 @@
             <div class="brand-icon">S</div>
 
             <div>
-                <span class="brand-name">
-                    SpecGuard
-                </span>
-
+                <span class="brand-name">SpecGuard</span>
                 <span class="brand-tagline">
                     Specification Intelligence
                 </span>
@@ -31,13 +28,8 @@
         </a>
 
         <div class="nav-links">
-            <a href="/" class="active">
-                Compare
-            </a>
-
-            <a href="/history">
-                History
-            </a>
+            <a href="/" class="active">Compare</a>
+            <a href="/history">History</a>
         </div>
 
     </nav>
@@ -76,25 +68,19 @@
         <section class="comparison-files">
 
             <div>
-                <span>
-                    PREVIOUS VERSION
-                </span>
+                <span>PREVIOUS VERSION</span>
 
                 <strong>
                     {{ old_filename }}
                 </strong>
             </div>
 
-
             <div class="file-arrow">
                 →
             </div>
 
-
             <div>
-                <span>
-                    CURRENT VERSION
-                </span>
+                <span>CURRENT VERSION</span>
 
                 <strong>
                     {{ new_filename }}
@@ -108,46 +94,23 @@
         <section class="summary">
 
             <div>
-                <strong>
-                    {{ summary.changed }}
-                </strong>
-
-                <span>
-                    Changed
-                </span>
+                <strong>{{ summary.changed }}</strong>
+                <span>Changed</span>
             </div>
 
-
             <div>
-                <strong>
-                    {{ summary.added }}
-                </strong>
-
-                <span>
-                    Added
-                </span>
+                <strong>{{ summary.added }}</strong>
+                <span>Added</span>
             </div>
 
-
             <div>
-                <strong>
-                    {{ summary.removed }}
-                </strong>
-
-                <span>
-                    Removed
-                </span>
+                <strong>{{ summary.removed }}</strong>
+                <span>Removed</span>
             </div>
 
-
             <div>
-                <strong>
-                    {{ summary.unchanged }}
-                </strong>
-
-                <span>
-                    Unchanged
-                </span>
+                <strong>{{ summary.unchanged }}</strong>
+                <span>Unchanged</span>
             </div>
 
         </section>
@@ -159,13 +122,11 @@
             <div class="card-header">
 
                 <div>
-                    <h2>
-                        Change details
-                    </h2>
+                    <h2>Change details</h2>
 
                     <p>
-                        Previous and current requirements
-                        shown side-by-side.
+                        Review each requirement and see exactly
+                        what changed between versions.
                     </p>
                 </div>
 
@@ -181,6 +142,7 @@
                             <th>Status</th>
                             <th>Previous Requirement</th>
                             <th>Current Requirement</th>
+                            <th>Detected Change</th>
                         </tr>
                     </thead>
 
@@ -191,6 +153,7 @@
 
                         <tr>
 
+                            <!-- STATUS -->
                             <td>
                                 <span class="status-badge {{ result.status|lower }}">
                                     {{ result.status }}
@@ -198,13 +161,78 @@
                             </td>
 
 
+                            <!-- PREVIOUS REQUIREMENT -->
                             <td>
                                 {{ result.old if result.old else "—" }}
                             </td>
 
 
+                            <!-- CURRENT REQUIREMENT -->
                             <td>
                                 {{ result.new if result.new else "—" }}
+                            </td>
+
+
+                            <!-- DETECTED CHANGE -->
+                            <td>
+
+                                {% if result.status == "CHANGED"
+                                      and result.changes is defined %}
+
+                                    <div class="change-detail">
+
+                                        {% if result.changes.removed %}
+
+                                            <span class="change-old">
+                                                {{ result.changes.removed | join(" ") }}
+                                            </span>
+
+                                        {% else %}
+
+                                            <span>—</span>
+
+                                        {% endif %}
+
+
+                                        <span class="change-arrow">
+                                            →
+                                        </span>
+
+
+                                        {% if result.changes.added %}
+
+                                            <span class="change-new">
+                                                {{ result.changes.added | join(" ") }}
+                                            </span>
+
+                                        {% else %}
+
+                                            <span>—</span>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                {% elif result.status == "ADDED" %}
+
+                                    <span class="change-description">
+                                        New requirement
+                                    </span>
+
+                                {% elif result.status == "REMOVED" %}
+
+                                    <span class="change-description">
+                                        Requirement removed
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="change-description">
+                                        No change
+                                    </span>
+
+                                {% endif %}
+
                             </td>
 
                         </tr>
@@ -236,7 +264,6 @@
                     Download CSV
                 </a>
 
-
                 <a href="/history"
                    class="primary-link">
                     View History →
@@ -252,9 +279,7 @@
     <!-- FOOTER -->
     <footer>
 
-        <span>
-            SpecGuard
-        </span>
+        <span>SpecGuard</span>
 
         <p>
             Requirement change intelligence.
