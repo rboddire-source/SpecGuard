@@ -143,6 +143,7 @@
                             <th>Previous Requirement</th>
                             <th>Current Requirement</th>
                             <th>Detected Change</th>
+                            <th>Risk Analysis</th>
                         </tr>
                     </thead>
 
@@ -233,6 +234,26 @@
 
                                 {% endif %}
 
+                            </td>
+                            <td>
+                                {% if result.risk is defined %}
+
+                                    <div class="risk-analysis">
+
+                                        <span class="risk-badge {{ result.risk.level|lower }}">
+                                            {{ result.risk.level }}
+                                        </span>
+
+                                        <div class="risk-reason">
+                                            {{ result.risk.reason }}
+                                        </div>
+                                    </div>
+
+                                {% else %}
+
+                                    <span>—</span>
+
+                                {% endif %}
                             </td>
 
                         </tr>

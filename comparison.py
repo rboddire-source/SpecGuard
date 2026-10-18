@@ -1,4 +1,4 @@
-from difflib import SequenceMatcher
+from difflib import SequenceMatcher, ndiff
 
 
 SIMILARITY_THRESHOLD = 0.55
@@ -14,6 +14,33 @@ def similarity(text1, text2):
         text1.lower().strip(),
         text2.lower().strip()
     ).ratio()
+
+
+def get_change_details(old_text, new_text):
+    """
+    Identify the words or values that changed between
+    two versions of a requirement.
+    """
+
+    old_words = old_text.split()
+    new_words = new_text.split()
+
+    differences = ndiff(old_words, new_words)
+
+    removed = []
+    added = []
+
+    for item in differences:
+        if item.startswith("- "):
+            removed.append(item[2:])
+
+        elif item.startswith("+ "):
+            added.append(item[2:])
+
+    return {
+        "removed": removed,
+        "added": added
+    }
 
 
 def compare_requirements(old_requirements, new_requirements):
@@ -41,7 +68,11 @@ def compare_requirements(old_requirements, new_requirements):
                     "status": "UNCHANGED",
                     "old": old_requirement,
                     "new": new_requirement,
-                    "similarity": 1.0
+                    "similarity": 1.0,
+                    "changes": {
+                        "removed": [],
+                        "added": []
+                    }
                 })
 
                 matched_old.add(old_index)
@@ -80,11 +111,17 @@ def compare_requirements(old_requirements, new_requirements):
             and best_score >= SIMILARITY_THRESHOLD
         ):
 
+            new_requirement = new_requirements[best_new_index]
+
             results.append({
                 "status": "CHANGED",
                 "old": old_requirement,
-                "new": new_requirements[best_new_index],
-                "similarity": round(best_score, 2)
+                "new": new_requirement,
+                "similarity": round(best_score, 2),
+                "changes": get_change_details(
+                    old_requirement,
+                    new_requirement
+                )
             })
 
             matched_new.add(best_new_index)
@@ -95,7 +132,11 @@ def compare_requirements(old_requirements, new_requirements):
                 "status": "REMOVED",
                 "old": old_requirement,
                 "new": None,
-                "similarity": 0
+                "similarity": 0,
+                "changes": {
+                    "removed": [],
+                    "added": []
+                }
             })
 
     # ---------------------------------------------------------
@@ -110,7 +151,11 @@ def compare_requirements(old_requirements, new_requirements):
                 "status": "ADDED",
                 "old": None,
                 "new": new_requirement,
-                "similarity": 0
+                "similarity": 0,
+                "changes": {
+                    "removed": [],
+                    "added": []
+                }
             })
 
     return results

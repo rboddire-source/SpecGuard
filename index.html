@@ -13,7 +13,7 @@
 <body>
 
 <nav class="navbar">
-    <a href="#" class="brand" onclick="showComparePage()">
+    <a href="#" class="brand" onclick="showComparePage(); return false;">
         <div class="brand-icon">S</div>
 
         <div>
@@ -25,16 +25,20 @@
     </a>
 
     <div class="nav-links">
-        <a href="#"
-           id="compareNav"
-           class="active"
-           onclick="showComparePage()">
+        <a
+            href="#"
+            id="compareNav"
+            class="active"
+            onclick="showComparePage(); return false;"
+        >
             Compare
         </a>
 
-        <a href="#"
-           id="historyNav"
-           onclick="showHistoryPage()">
+        <a
+            href="#"
+            id="historyNav"
+            onclick="showHistoryPage(); return false;"
+        >
             History
         </a>
     </div>
@@ -43,7 +47,9 @@
 
 <main>
 
-    <!-- COMPARE PAGE -->
+    <!-- =====================================================
+         COMPARE PAGE
+    ====================================================== -->
 
     <div id="comparePage">
 
@@ -59,8 +65,9 @@
             </h1>
 
             <p>
-                Compare requirement versions, identify changes,
-                and maintain a local history of your specifications.
+                Compare requirement versions, identify exact changes,
+                assess review risk, and maintain a local history
+                of your specifications.
             </p>
 
         </section>
@@ -178,11 +185,11 @@
             <div>
                 <span>02</span>
 
-                <h3>Review Clearly</h3>
+                <h3>Review Exact Differences</h3>
 
                 <p>
-                    See previous and current requirements
-                    side-by-side.
+                    See exactly which words or values changed
+                    between requirement versions.
                 </p>
             </div>
 
@@ -190,11 +197,11 @@
             <div>
                 <span>03</span>
 
-                <h3>Track History</h3>
+                <h3>Prioritize Review</h3>
 
                 <p>
-                    Keep previous comparisons available
-                    locally in your browser.
+                    Use explainable rule-based risk levels
+                    to identify changes that deserve attention.
                 </p>
             </div>
 
@@ -203,7 +210,9 @@
     </div>
 
 
-    <!-- RESULTS PAGE -->
+    <!-- =====================================================
+         RESULTS PAGE
+    ====================================================== -->
 
     <div id="resultsPage" style="display: none;">
 
@@ -285,6 +294,8 @@
                             <th>Status</th>
                             <th>Previous Requirement</th>
                             <th>Current Requirement</th>
+                            <th>Detected Change</th>
+                            <th>Risk Analysis</th>
                         </tr>
                     </thead>
 
@@ -332,7 +343,9 @@
     </div>
 
 
-    <!-- HISTORY PAGE -->
+    <!-- =====================================================
+         HISTORY PAGE
+    ====================================================== -->
 
     <div id="historyPage" style="display: none;">
 
@@ -424,16 +437,24 @@
 
 
 <script>
+
 const SIMILARITY_THRESHOLD = 0.55;
+
+const SECURITY_KEYWORDS = [
+    "password",
+    "authentication",
+    "login",
+    "session",
+    "permission",
+    "access"
+];
 
 let currentComparison = null;
 
 
 /*
-    Similarity implementation for the static
-    GitHub Pages version.
-
-    This uses normalized Levenshtein similarity.
+    Normalized Levenshtein similarity for the
+    browser-based GitHub Pages version.
 */
 function similarity(text1, text2) {
 
@@ -458,7 +479,10 @@ function similarity(text1, text2) {
 
         for (let j = 1; j <= a.length; j++) {
 
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            if (
+                b.charAt(i - 1) ===
+                a.charAt(j - 1)
+            ) {
 
                 matrix[i][j] =
                     matrix[i - 1][j - 1];
@@ -488,6 +512,214 @@ function similarity(text1, text2) {
 }
 
 
+/*
+    Word-level change analysis.
+
+    Uses a longest-common-subsequence table to
+    identify words/values that were removed and added.
+*/
+function getChangeDetails(oldText, newText) {
+
+    const oldWords =
+        oldText.trim().split(/\s+/);
+
+    const newWords =
+        newText.trim().split(/\s+/);
+
+    const rows =
+        oldWords.length + 1;
+
+    const columns =
+        newWords.length + 1;
+
+    const dp = Array.from(
+        { length: rows },
+        () => Array(columns).fill(0)
+    );
+
+
+    for (let i = 1; i < rows; i++) {
+
+        for (let j = 1; j < columns; j++) {
+
+            if (
+                oldWords[i - 1] ===
+                newWords[j - 1]
+            ) {
+
+                dp[i][j] =
+                    dp[i - 1][j - 1] + 1;
+
+            } else {
+
+                dp[i][j] =
+                    Math.max(
+                        dp[i - 1][j],
+                        dp[i][j - 1]
+                    );
+            }
+        }
+    }
+
+
+    const removed = [];
+    const added = [];
+
+    let i = oldWords.length;
+    let j = newWords.length;
+
+
+    while (i > 0 && j > 0) {
+
+        if (
+            oldWords[i - 1] ===
+            newWords[j - 1]
+        ) {
+
+            i--;
+            j--;
+
+        } else if (
+            dp[i - 1][j] >=
+            dp[i][j - 1]
+        ) {
+
+            removed.unshift(
+                oldWords[i - 1]
+            );
+
+            i--;
+
+        } else {
+
+            added.unshift(
+                newWords[j - 1]
+            );
+
+            j--;
+        }
+    }
+
+
+    while (i > 0) {
+
+        removed.unshift(
+            oldWords[i - 1]
+        );
+
+        i--;
+    }
+
+
+    while (j > 0) {
+
+        added.unshift(
+            newWords[j - 1]
+        );
+
+        j--;
+    }
+
+
+    return {
+        removed: removed,
+        added: added
+    };
+}
+
+
+/*
+    Explainable rule-based risk analysis.
+
+    This is a review-priority heuristic.
+    It is not a prediction that a requirement is
+    objectively dangerous.
+*/
+function analyzeRisk(result) {
+
+    if (result.status === "UNCHANGED") {
+
+        return {
+            level: "NONE",
+            reason:
+                "Requirement did not change."
+        };
+    }
+
+
+    if (result.status === "ADDED") {
+
+        return {
+            level: "MEDIUM",
+            reason:
+                "A new requirement was added."
+        };
+    }
+
+
+    if (result.status === "REMOVED") {
+
+        return {
+            level: "HIGH",
+            reason:
+                "An existing requirement was removed."
+        };
+    }
+
+
+    if (result.status === "CHANGED") {
+
+        const newRequirement =
+            (result.new || "")
+                .toLowerCase();
+
+        const securitySensitive =
+            SECURITY_KEYWORDS.some(
+                keyword =>
+                    newRequirement.includes(
+                        keyword
+                    )
+            );
+
+
+        if (securitySensitive) {
+
+            return {
+                level: "HIGH",
+                reason:
+                    "Security-sensitive requirement was changed."
+            };
+        }
+
+
+        return {
+            level: "MEDIUM",
+            reason:
+                "Requirement was changed."
+        };
+    }
+
+
+    return {
+        level: "UNKNOWN",
+        reason:
+            "Unsupported comparison status."
+    };
+}
+
+
+/*
+    Compare two arrays of requirements.
+
+    Pass 1:
+    Match exact requirements.
+
+    Pass 2:
+    Match sufficiently similar requirements.
+
+    Pass 3:
+    Mark unmatched new requirements as added.
+*/
 function compareRequirements(
     oldRequirements,
     newRequirements
@@ -512,24 +744,42 @@ function compareRequirements(
                 newIndex++
             ) {
 
-                if (matchedNew.has(newIndex)) {
+                if (
+                    matchedNew.has(newIndex)
+                ) {
                     continue;
                 }
+
 
                 if (
                     oldRequirement.trim() ===
                     newRequirements[newIndex].trim()
                 ) {
 
-                    results.push({
+                    const result = {
                         status: "UNCHANGED",
                         old: oldRequirement,
-                        new: newRequirements[newIndex],
-                        similarity: 1
-                    });
+                        new:
+                            newRequirements[newIndex],
+                        similarity: 1,
+                        changes: {
+                            removed: [],
+                            added: []
+                        }
+                    };
 
-                    matchedOld.add(oldIndex);
-                    matchedNew.add(newIndex);
+                    result.risk =
+                        analyzeRisk(result);
+
+                    results.push(result);
+
+                    matchedOld.add(
+                        oldIndex
+                    );
+
+                    matchedNew.add(
+                        newIndex
+                    );
 
                     break;
                 }
@@ -545,29 +795,48 @@ function compareRequirements(
     oldRequirements.forEach(
         (oldRequirement, oldIndex) => {
 
-            if (matchedOld.has(oldIndex)) {
+            if (
+                matchedOld.has(oldIndex)
+            ) {
                 return;
             }
+
 
             let bestScore = 0;
             let bestNewIndex = null;
 
 
             newRequirements.forEach(
-                (newRequirement, newIndex) => {
+                (
+                    newRequirement,
+                    newIndex
+                ) => {
 
-                    if (matchedNew.has(newIndex)) {
+                    if (
+                        matchedNew.has(
+                            newIndex
+                        )
+                    ) {
                         return;
                     }
 
-                    const score = similarity(
-                        oldRequirement,
-                        newRequirement
-                    );
 
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestNewIndex = newIndex;
+                    const score =
+                        similarity(
+                            oldRequirement,
+                            newRequirement
+                        );
+
+
+                    if (
+                        score > bestScore
+                    ) {
+
+                        bestScore =
+                            score;
+
+                        bestNewIndex =
+                            newIndex;
                     }
                 }
             );
@@ -575,27 +844,61 @@ function compareRequirements(
 
             if (
                 bestNewIndex !== null &&
-                bestScore >= SIMILARITY_THRESHOLD
+                bestScore >=
+                    SIMILARITY_THRESHOLD
             ) {
 
-                results.push({
+                const newRequirement =
+                    newRequirements[
+                        bestNewIndex
+                    ];
+
+
+                const result = {
                     status: "CHANGED",
                     old: oldRequirement,
-                    new: newRequirements[bestNewIndex],
+                    new: newRequirement,
                     similarity:
-                        Number(bestScore.toFixed(2))
-                });
+                        Number(
+                            bestScore.toFixed(2)
+                        ),
+                    changes:
+                        getChangeDetails(
+                            oldRequirement,
+                            newRequirement
+                        )
+                };
 
-                matchedNew.add(bestNewIndex);
+
+                result.risk =
+                    analyzeRisk(result);
+
+
+                results.push(result);
+
+                matchedNew.add(
+                    bestNewIndex
+                );
 
             } else {
 
-                results.push({
+                const result = {
                     status: "REMOVED",
                     old: oldRequirement,
                     new: null,
-                    similarity: 0
-                });
+                    similarity: 0,
+                    changes: {
+                        removed: [],
+                        added: []
+                    }
+                };
+
+
+                result.risk =
+                    analyzeRisk(result);
+
+
+                results.push(result);
             }
         }
     );
@@ -606,16 +909,34 @@ function compareRequirements(
         Remaining new requirements
     */
     newRequirements.forEach(
-        (newRequirement, newIndex) => {
+        (
+            newRequirement,
+            newIndex
+        ) => {
 
-            if (!matchedNew.has(newIndex)) {
+            if (
+                !matchedNew.has(
+                    newIndex
+                )
+            ) {
 
-                results.push({
+                const result = {
                     status: "ADDED",
                     old: null,
                     new: newRequirement,
-                    similarity: 0
-                });
+                    similarity: 0,
+                    changes: {
+                        removed: [],
+                        added: []
+                    }
+                };
+
+
+                result.risk =
+                    analyzeRisk(result);
+
+
+                results.push(result);
             }
         }
     );
@@ -628,28 +949,33 @@ function compareRequirements(
 function buildSummary(results) {
 
     return {
+
         changed:
             results.filter(
                 result =>
-                    result.status === "CHANGED"
+                    result.status ===
+                    "CHANGED"
             ).length,
 
         added:
             results.filter(
                 result =>
-                    result.status === "ADDED"
+                    result.status ===
+                    "ADDED"
             ).length,
 
         removed:
             results.filter(
                 result =>
-                    result.status === "REMOVED"
+                    result.status ===
+                    "REMOVED"
             ).length,
 
         unchanged:
             results.filter(
                 result =>
-                    result.status === "UNCHANGED"
+                    result.status ===
+                    "UNCHANGED"
             ).length
     };
 }
@@ -659,43 +985,167 @@ function parseRequirements(text) {
 
     return text
         .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+        .map(
+            line =>
+                line.trim()
+        )
+        .filter(
+            line =>
+                line.length > 0
+        );
 }
 
 
 function escapeHTML(value) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return "—";
     }
 
-    const div = document.createElement("div");
 
-    div.textContent = value;
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        String(value);
 
     return div.innerHTML;
 }
 
 
+function getDetectedChange(result) {
+
+    if (
+        result.status === "CHANGED"
+    ) {
+
+        const removed =
+            result.changes?.removed
+                ?.join(" ") || "—";
+
+        const added =
+            result.changes?.added
+                ?.join(" ") || "—";
+
+
+        return (
+            removed +
+            " → " +
+            added
+        );
+    }
+
+
+    if (
+        result.status === "ADDED"
+    ) {
+        return "New requirement";
+    }
+
+
+    if (
+        result.status === "REMOVED"
+    ) {
+        return "Requirement removed";
+    }
+
+
+    return "No change";
+}
+
+
+/*
+    Support old history entries created before
+    risk/change-detail analysis was introduced.
+*/
+function enrichResult(result) {
+
+    const enriched = {
+        ...result
+    };
+
+
+    if (
+        !enriched.changes
+    ) {
+
+        if (
+            enriched.status ===
+                "CHANGED" &&
+            enriched.old &&
+            enriched.new
+        ) {
+
+            enriched.changes =
+                getChangeDetails(
+                    enriched.old,
+                    enriched.new
+                );
+
+        } else {
+
+            enriched.changes = {
+                removed: [],
+                added: []
+            };
+        }
+    }
+
+
+    if (
+        !enriched.risk
+    ) {
+
+        enriched.risk =
+            analyzeRisk(
+                enriched
+            );
+    }
+
+
+    return enriched;
+}
+
+
+/*
+    FORM SUBMISSION
+*/
 document
-    .getElementById("comparisonForm")
+    .getElementById(
+        "comparisonForm"
+    )
     .addEventListener(
         "submit",
         async function(event) {
 
             event.preventDefault();
 
+
             const oldFile =
-                document.getElementById("oldFile")
+                document
+                    .getElementById(
+                        "oldFile"
+                    )
                     .files[0];
+
 
             const newFile =
-                document.getElementById("newFile")
+                document
+                    .getElementById(
+                        "newFile"
+                    )
                     .files[0];
 
 
-            if (!oldFile || !newFile) {
+            if (
+                !oldFile ||
+                !newFile
+            ) {
 
                 alert(
                     "Please select both specification files."
@@ -706,8 +1156,12 @@ document
 
 
             if (
-                !oldFile.name.toLowerCase().endsWith(".txt") ||
-                !newFile.name.toLowerCase().endsWith(".txt")
+                !oldFile.name
+                    .toLowerCase()
+                    .endsWith(".txt") ||
+                !newFile.name
+                    .toLowerCase()
+                    .endsWith(".txt")
             ) {
 
                 alert(
@@ -726,10 +1180,14 @@ document
 
 
             const oldRequirements =
-                parseRequirements(oldText);
+                parseRequirements(
+                    oldText
+                );
 
             const newRequirements =
-                parseRequirements(newText);
+                parseRequirements(
+                    newText
+                );
 
 
             if (
@@ -753,23 +1211,42 @@ document
 
 
             const summary =
-                buildSummary(results);
+                buildSummary(
+                    results
+                );
 
 
             currentComparison = {
+
                 id: Date.now(),
-                oldFilename: oldFile.name,
-                newFilename: newFile.name,
+
+                oldFilename:
+                    oldFile.name,
+
+                newFilename:
+                    newFile.name,
+
                 createdAt:
-                    new Date().toLocaleString(),
-                summary: summary,
-                results: results
+                    new Date()
+                        .toLocaleString(),
+
+                summary:
+                    summary,
+
+                results:
+                    results
             };
 
 
-            saveHistory(currentComparison);
+            saveHistory(
+                currentComparison
+            );
 
-            renderResults(currentComparison);
+
+            renderResults(
+                currentComparison
+            );
+
 
             showResultsPage();
         }
@@ -778,33 +1255,54 @@ document
 
 function renderResults(comparison) {
 
-    document.getElementById(
-        "changedCount"
-    ).textContent =
-        comparison.summary.changed;
-
-    document.getElementById(
-        "addedCount"
-    ).textContent =
-        comparison.summary.added;
-
-    document.getElementById(
-        "removedCount"
-    ).textContent =
-        comparison.summary.removed;
-
-    document.getElementById(
-        "unchangedCount"
-    ).textContent =
-        comparison.summary.unchanged;
+    document
+        .getElementById(
+            "changedCount"
+        )
+        .textContent =
+            comparison
+                .summary
+                .changed;
 
 
-    document.getElementById(
-        "comparisonFileNames"
-    ).textContent =
-        comparison.oldFilename +
-        " → " +
-        comparison.newFilename;
+    document
+        .getElementById(
+            "addedCount"
+        )
+        .textContent =
+            comparison
+                .summary
+                .added;
+
+
+    document
+        .getElementById(
+            "removedCount"
+        )
+        .textContent =
+            comparison
+                .summary
+                .removed;
+
+
+    document
+        .getElementById(
+            "unchangedCount"
+        )
+        .textContent =
+            comparison
+                .summary
+                .unchanged;
+
+
+    document
+        .getElementById(
+            "comparisonFileNames"
+        )
+        .textContent =
+            comparison.oldFilename +
+            " → " +
+            comparison.newFilename;
 
 
     const body =
@@ -816,14 +1314,39 @@ function renderResults(comparison) {
     body.innerHTML = "";
 
 
+    comparison.results =
+        comparison.results.map(
+            enrichResult
+        );
+
+
     comparison.results.forEach(
         result => {
 
             const row =
-                document.createElement("tr");
+                document.createElement(
+                    "tr"
+                );
+
+
+            const detectedChange =
+                getDetectedChange(
+                    result
+                );
+
+
+            const riskLevel =
+                result.risk?.level ||
+                "UNKNOWN";
+
+
+            const riskReason =
+                result.risk?.reason ||
+                "Risk analysis unavailable.";
 
 
             row.innerHTML = `
+
                 <td>
                     <span class="status-badge ${result.status.toLowerCase()}">
                         ${escapeHTML(result.status)}
@@ -837,15 +1360,40 @@ function renderResults(comparison) {
                 <td>
                     ${escapeHTML(result.new)}
                 </td>
+
+                <td>
+                    <div class="change-detail">
+                        ${escapeHTML(detectedChange)}
+                    </div>
+                </td>
+
+                <td>
+                    <div class="risk-analysis">
+
+                        <span class="risk-badge ${riskLevel.toLowerCase()}">
+                            ${escapeHTML(riskLevel)}
+                        </span>
+
+                        <div class="risk-reason">
+                            ${escapeHTML(riskReason)}
+                        </div>
+
+                    </div>
+                </td>
             `;
 
 
-            body.appendChild(row);
+            body.appendChild(
+                row
+            );
         }
     );
 }
 
 
+/*
+    HISTORY
+*/
 function getHistory() {
 
     try {
@@ -869,7 +1417,9 @@ function saveHistory(comparison) {
         getHistory();
 
 
-    history.unshift(comparison);
+    history.unshift(
+        comparison
+    );
 
 
     /*
@@ -877,12 +1427,17 @@ function saveHistory(comparison) {
         so browser storage does not grow forever.
     */
     const limitedHistory =
-        history.slice(0, 50);
+        history.slice(
+            0,
+            50
+        );
 
 
     localStorage.setItem(
         "specguardHistory",
-        JSON.stringify(limitedHistory)
+        JSON.stringify(
+            limitedHistory
+        )
     );
 }
 
@@ -902,7 +1457,9 @@ function renderHistory() {
     body.innerHTML = "";
 
 
-    if (history.length === 0) {
+    if (
+        history.length === 0
+    ) {
 
         body.innerHTML = `
             <tr>
@@ -920,10 +1477,13 @@ function renderHistory() {
         (comparison, index) => {
 
             const row =
-                document.createElement("tr");
+                document.createElement(
+                    "tr"
+                );
 
 
             row.innerHTML = `
+
                 <td>
                     #${history.length - index}
                 </td>
@@ -973,7 +1533,9 @@ function renderHistory() {
             `;
 
 
-            body.appendChild(row);
+            body.appendChild(
+                row
+            );
         }
     );
 }
@@ -987,13 +1549,25 @@ function openHistory(id) {
 
     const comparison =
         history.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (!comparison) {
         return;
     }
+
+
+    /*
+        Old browser history may not contain the
+        new changes/risk properties, so enrich it
+        when opened.
+    */
+    comparison.results =
+        comparison.results.map(
+            enrichResult
+        );
 
 
     currentComparison =
@@ -1009,11 +1583,22 @@ function openHistory(id) {
 }
 
 
+/*
+    CSV REPORT
+*/
 function downloadCurrentCSV() {
 
-    if (!currentComparison) {
+    if (
+        !currentComparison
+    ) {
         return;
     }
+
+
+    currentComparison.results =
+        currentComparison.results.map(
+            enrichResult
+        );
 
 
     const rows = [
@@ -1043,7 +1628,10 @@ function downloadCurrentCSV() {
             "Status",
             "Previous Requirement",
             "Current Requirement",
-            "Similarity"
+            "Similarity",
+            "Detected Change",
+            "Risk Level",
+            "Risk Reason"
         ]
     ];
 
@@ -1052,10 +1640,24 @@ function downloadCurrentCSV() {
         result => {
 
             rows.push([
+
                 result.status,
+
                 result.old || "",
+
                 result.new || "",
-                result.similarity
+
+                result.similarity,
+
+                getDetectedChange(
+                    result
+                ),
+
+                result.risk?.level ||
+                    "UNKNOWN",
+
+                result.risk?.reason ||
+                    "Risk analysis unavailable."
             ]);
         }
     );
@@ -1066,7 +1668,9 @@ function downloadCurrentCSV() {
             .map(
                 row =>
                     row
-                        .map(csvEscape)
+                        .map(
+                            csvEscape
+                        )
                         .join(",")
             )
             .join("\n");
@@ -1083,26 +1687,41 @@ function downloadCurrentCSV() {
 
 
     const url =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+            blob
+        );
 
 
     const link =
-        document.createElement("a");
+        document.createElement(
+            "a"
+        );
 
 
-    link.href = url;
+    link.href =
+        url;
+
 
     link.download =
         "specguard_comparison.csv";
 
 
-    document.body.appendChild(link);
+    document.body.appendChild(
+        link
+    );
+
 
     link.click();
 
-    document.body.removeChild(link);
 
-    URL.revokeObjectURL(url);
+    document.body.removeChild(
+        link
+    );
+
+
+    URL.revokeObjectURL(
+        url
+    );
 }
 
 
@@ -1125,28 +1744,51 @@ function csvEscape(value) {
 }
 
 
+/*
+    NAVIGATION
+*/
 function hidePages() {
 
-    document.getElementById(
-        "comparePage"
-    ).style.display = "none";
-
-    document.getElementById(
-        "resultsPage"
-    ).style.display = "none";
-
-    document.getElementById(
-        "historyPage"
-    ).style.display = "none";
+    document
+        .getElementById(
+            "comparePage"
+        )
+        .style.display =
+            "none";
 
 
-    document.getElementById(
-        "compareNav"
-    ).classList.remove("active");
+    document
+        .getElementById(
+            "resultsPage"
+        )
+        .style.display =
+            "none";
 
-    document.getElementById(
-        "historyNav"
-    ).classList.remove("active");
+
+    document
+        .getElementById(
+            "historyPage"
+        )
+        .style.display =
+            "none";
+
+
+    document
+        .getElementById(
+            "compareNav"
+        )
+        .classList.remove(
+            "active"
+        );
+
+
+    document
+        .getElementById(
+            "historyNav"
+        )
+        .classList.remove(
+            "active"
+        );
 }
 
 
@@ -1154,15 +1796,28 @@ function showComparePage() {
 
     hidePages();
 
-    document.getElementById(
-        "comparePage"
-    ).style.display = "block";
 
-    document.getElementById(
-        "compareNav"
-    ).classList.add("active");
+    document
+        .getElementById(
+            "comparePage"
+        )
+        .style.display =
+            "block";
 
-    window.scrollTo(0, 0);
+
+    document
+        .getElementById(
+            "compareNav"
+        )
+        .classList.add(
+            "active"
+        );
+
+
+    window.scrollTo(
+        0,
+        0
+    );
 }
 
 
@@ -1170,15 +1825,28 @@ function showResultsPage() {
 
     hidePages();
 
-    document.getElementById(
-        "resultsPage"
-    ).style.display = "block";
 
-    document.getElementById(
-        "compareNav"
-    ).classList.add("active");
+    document
+        .getElementById(
+            "resultsPage"
+        )
+        .style.display =
+            "block";
 
-    window.scrollTo(0, 0);
+
+    document
+        .getElementById(
+            "compareNav"
+        )
+        .classList.add(
+            "active"
+        );
+
+
+    window.scrollTo(
+        0,
+        0
+    );
 }
 
 
@@ -1186,18 +1854,33 @@ function showHistoryPage() {
 
     hidePages();
 
+
     renderHistory();
 
-    document.getElementById(
-        "historyPage"
-    ).style.display = "block";
 
-    document.getElementById(
-        "historyNav"
-    ).classList.add("active");
+    document
+        .getElementById(
+            "historyPage"
+        )
+        .style.display =
+            "block";
 
-    window.scrollTo(0, 0);
+
+    document
+        .getElementById(
+            "historyNav"
+        )
+        .classList.add(
+            "active"
+        );
+
+
+    window.scrollTo(
+        0,
+        0
+    );
 }
+
 </script>
 
 </body>

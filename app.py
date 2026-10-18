@@ -1,6 +1,5 @@
 import csv
 import io
-import os
 
 from flask import (
     Flask,
@@ -18,6 +17,7 @@ from database import (
 )
 
 from comparison import compare_requirements
+from risk_analysis import analyze_risk
 
 
 app = Flask(__name__)
@@ -42,15 +42,21 @@ def allowed_file(filename):
 
 def read_uploaded_file(file):
     if not file or file.filename == "":
-        raise ValueError("Please select both specification files.")
+        raise ValueError(
+            "Please select both specification files."
+        )
 
     if not allowed_file(file.filename):
-        raise ValueError("Only .txt files are supported.")
+        raise ValueError(
+            "Only .txt files are supported."
+        )
 
     try:
         content = file.read().decode("utf-8")
     except UnicodeDecodeError:
-        raise ValueError("Files must use UTF-8 text encoding.")
+        raise ValueError(
+            "Files must use UTF-8 text encoding."
+        )
 
     if not content.strip():
         raise ValueError(
@@ -69,6 +75,18 @@ def read_uploaded_file(file):
         )
 
     return requirements
+
+
+def add_risk_analysis(results):
+    """
+    Add explainable rule-based risk information
+    to each comparison result.
+    """
+
+    for result in results:
+        result["risk"] = analyze_risk(result)
+
+    return results
 
 
 def build_summary(results):
@@ -122,6 +140,8 @@ def compare():
         new_requirements
     )
 
+    results = add_risk_analysis(results)
+
     summary = build_summary(results)
 
     run_id = save_comparison(
@@ -163,6 +183,8 @@ def api_compare():
         old_requirements,
         new_requirements
     )
+
+    results = add_risk_analysis(results)
 
     summary = build_summary(results)
 
@@ -216,6 +238,9 @@ def comparison_details(run_id):
         for change in changes
     ]
 
+    # Risk is recalculated when an old comparison is opened.
+    results = add_risk_analysis(results)
+
     return render_template(
         "results.html",
         results=results,
@@ -266,18 +291,33 @@ def download_report(run_id):
         "Status",
         "Previous Requirement",
         "Current Requirement",
-        "Similarity"
+        "Similarity",
+        "Risk Level",
+        "Risk Reason"
     ])
 
     for change in changes:
+        result = {
+            "status": change["status"],
+            "old": change["old_requirement"],
+            "new": change["new_requirement"],
+            "similarity": change["similarity"]
+        }
+
+        risk = analyze_risk(result)
+
         writer.writerow([
             change["status"],
             change["old_requirement"] or "",
             change["new_requirement"] or "",
-            change["similarity"]
+            change["similarity"],
+            risk["level"],
+            risk["reason"]
         ])
 
-    response = make_response(output.getvalue())
+    response = make_response(
+        output.getvalue()
+    )
 
     response.headers["Content-Type"] = (
         "text/csv; charset=utf-8"
