@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rboddire-source.github.io/SpecGuard/sitemap.xml
