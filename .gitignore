@@ -8,3 +8,5 @@ specguard.db
 
 .env
 .DS_Store
+.neon
+.env.local
