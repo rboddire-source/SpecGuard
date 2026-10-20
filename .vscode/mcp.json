@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "Neon": {
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp?category=querying&category=schema&projectId=curly-unit-00491690"
+    }
+  }
+}
