@@ -22,10 +22,10 @@ def get_connection():
 
     if database_url:
         return psycopg.connect(
-            database_url,
-            row_factory=dict_row
-        )
-
+    database_url,
+    row_factory=dict_row,
+    sslmode="require"
+)
     connection = sqlite3.connect(SQLITE_DATABASE_NAME)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
