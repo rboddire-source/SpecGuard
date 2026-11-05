@@ -26,5 +26,9 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Initialize test database
+        run: python -c "from database import create_database; create_database()"
+
       - name: Run automated tests
-        run: python -m pytest -q
+        run: python -m pytest -q 
+        
