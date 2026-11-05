@@ -10,3 +10,11 @@ specguard.db
 .DS_Store
 .neon
 .env.local
+
+.vscode/
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.pem
+*.key

@@ -1,24 +1,61 @@
+
+import re
+
+
 SECURITY_KEYWORDS = {
     "password",
     "authentication",
     "login",
     "session",
     "permission",
-    "access"
+    "access",
+    "authorization",
+    "encryption",
+    "token",
+    "security",
+    "credential",
+    "mfa",
+    "2fa"
 }
+
+
+def contains_security_keywords(text):
+    """
+    Detect security-related keywords as whole words.
+    """
+    if not text:
+        return False
+
+    words = set(
+        re.findall(r"[a-z0-9]+", text.lower())
+    )
+
+    return bool(words & SECURITY_KEYWORDS)
 
 
 def analyze_risk(result):
     """
-    Assign a rule-based risk level to a requirement comparison result.
+    Assign a rule-based review priority.
 
-    Levels:
-        NONE   - unchanged requirement
-        MEDIUM - added or non-security changed requirement
-        HIGH   - removed or security-sensitive changed requirement
+    NONE:
+        Requirement is unchanged.
+
+    MEDIUM:
+        Requirement was added or changed
+        without a recognized security keyword.
+
+    HIGH:
+        Requirement was removed or a changed
+        requirement contains security keywords.
+
+    These labels are heuristic review priorities,
+    not validated security risk assessments.
     """
 
     status = result.get("status")
+
+    old_requirement = result.get("old") or ""
+    new_requirement = result.get("new") or ""
 
     if status == "UNCHANGED":
         return {
@@ -39,15 +76,18 @@ def analyze_risk(result):
         }
 
     if status == "CHANGED":
-        new_requirement = (result.get("new") or "").lower()
+        security_sensitive = (
+            contains_security_keywords(old_requirement)
+            or contains_security_keywords(new_requirement)
+        )
 
-        if any(
-            keyword in new_requirement
-            for keyword in SECURITY_KEYWORDS
-        ):
+        if security_sensitive:
             return {
                 "level": "HIGH",
-                "reason": "Security-sensitive requirement was changed."
+                "reason": (
+                    "Security-sensitive requirement "
+                    "was changed."
+                )
             }
 
         return {

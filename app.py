@@ -1,5 +1,7 @@
+
 import csv
 import io
+import os
 
 from flask import (
     Flask,
@@ -16,13 +18,16 @@ from database import (
     get_comparison
 )
 
-from comparison import compare_requirements
+from comparison import (
+    compare_requirements,
+    get_change_details
+)
+
 from risk_analysis import analyze_risk
 
 
 app = Flask(__name__)
 
-# Maximum request size: 2 MB
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"txt"}
@@ -34,14 +39,15 @@ ALLOWED_EXTENSIONS = {"txt"}
 
 def allowed_file(filename):
     return (
-        "." in filename
+        bool(filename)
+        and "." in filename
         and filename.rsplit(".", 1)[1].lower()
         in ALLOWED_EXTENSIONS
     )
 
 
 def read_uploaded_file(file):
-    if not file or file.filename == "":
+    if not file or not file.filename:
         raise ValueError(
             "Please select both specification files."
         )
@@ -60,7 +66,7 @@ def read_uploaded_file(file):
 
     if not content.strip():
         raise ValueError(
-            f"{file.filename} is empty."
+            "The uploaded file is empty."
         )
 
     requirements = [
@@ -71,18 +77,13 @@ def read_uploaded_file(file):
 
     if not requirements:
         raise ValueError(
-            f"{file.filename} contains no requirements."
+            "The file contains no requirements."
         )
 
     return requirements
 
 
 def add_risk_analysis(results):
-    """
-    Add explainable rule-based risk information
-    to each comparison result.
-    """
-
     for result in results:
         result["risk"] = analyze_risk(result)
 
@@ -110,6 +111,68 @@ def build_summary(results):
     }
 
 
+def restore_results(changes):
+    """
+    Rebuild results from saved database records.
+
+    Older comparisons may not have stored
+    word-level change details.
+    """
+
+    results = []
+
+    for change in changes:
+        status = change["status"]
+        old_text = change["old_requirement"]
+        new_text = change["new_requirement"]
+
+        details = change.get("changes")
+
+        if not isinstance(details, dict):
+            details = None
+
+        if status == "CHANGED" and details is None:
+            if old_text is not None and new_text is not None:
+                details = get_change_details(
+                    old_text,
+                    new_text
+                )
+
+        if details is None:
+            details = {
+                "removed": [],
+                "added": []
+            }
+
+        results.append({
+            "status": status,
+            "old": old_text,
+            "new": new_text,
+            "similarity": change["similarity"],
+            "changes": details
+        })
+
+    return add_risk_analysis(results)
+
+
+def safe_csv_value(value):
+    """
+    Prevent spreadsheet formula injection
+    when exported CSV files are opened.
+    """
+    if value is None:
+        return ""
+
+    text = str(value)
+
+    if text.lstrip().startswith(
+        ("=", "+", "-", "@")
+    ):
+        return "'" + text
+
+    return text
+
+
 # ---------------------------------------------------------
 # HOME
 # ---------------------------------------------------------
@@ -131,7 +194,6 @@ def compare():
     try:
         old_requirements = read_uploaded_file(old_file)
         new_requirements = read_uploaded_file(new_file)
-
     except ValueError as error:
         return str(error), 400
 
@@ -141,7 +203,6 @@ def compare():
     )
 
     results = add_risk_analysis(results)
-
     summary = build_summary(results)
 
     run_id = save_comparison(
@@ -173,7 +234,6 @@ def api_compare():
     try:
         old_requirements = read_uploaded_file(old_file)
         new_requirements = read_uploaded_file(new_file)
-
     except ValueError as error:
         return jsonify({
             "error": str(error)
@@ -186,12 +246,10 @@ def api_compare():
 
     results = add_risk_analysis(results)
 
-    summary = build_summary(results)
-
     return jsonify({
         "old_filename": old_file.filename,
         "new_filename": new_file.filename,
-        "summary": summary,
+        "summary": build_summary(results),
         "changes": results
     })
 
@@ -228,18 +286,7 @@ def comparison_details(run_id):
         "unchanged": comparison["unchanged_count"]
     }
 
-    results = [
-        {
-            "status": change["status"],
-            "old": change["old_requirement"],
-            "new": change["new_requirement"],
-            "similarity": change["similarity"]
-        }
-        for change in changes
-    ]
-
-    # Risk is recalculated when an old comparison is opened.
-    results = add_risk_analysis(results)
+    results = restore_results(changes)
 
     return render_template(
         "results.html",
@@ -252,7 +299,7 @@ def comparison_details(run_id):
 
 
 # ---------------------------------------------------------
-# DOWNLOAD CSV REPORT
+# CSV REPORT
 # ---------------------------------------------------------
 
 @app.route("/report/<int:run_id>")
@@ -262,8 +309,9 @@ def download_report(run_id):
     if comparison is None:
         return "Comparison not found.", 404
 
-    output = io.StringIO()
+    results = restore_results(changes)
 
+    output = io.StringIO()
     writer = csv.writer(output)
 
     writer.writerow([
@@ -272,17 +320,17 @@ def download_report(run_id):
 
     writer.writerow([
         "Previous File",
-        comparison["old_filename"]
+        safe_csv_value(comparison["old_filename"])
     ])
 
     writer.writerow([
         "Current File",
-        comparison["new_filename"]
+        safe_csv_value(comparison["new_filename"])
     ])
 
     writer.writerow([
         "Created",
-        comparison["created_at"]
+        safe_csv_value(comparison["created_at"])
     ])
 
     writer.writerow([])
@@ -296,28 +344,19 @@ def download_report(run_id):
         "Risk Reason"
     ])
 
-    for change in changes:
-        result = {
-            "status": change["status"],
-            "old": change["old_requirement"],
-            "new": change["new_requirement"],
-            "similarity": change["similarity"]
-        }
-
-        risk = analyze_risk(result)
+    for result in results:
+        risk = result["risk"]
 
         writer.writerow([
-            change["status"],
-            change["old_requirement"] or "",
-            change["new_requirement"] or "",
-            change["similarity"],
-            risk["level"],
-            risk["reason"]
+            safe_csv_value(result["status"]),
+            safe_csv_value(result["old"]),
+            safe_csv_value(result["new"]),
+            result["similarity"],
+            safe_csv_value(risk["level"]),
+            safe_csv_value(risk["reason"])
         ])
 
-    response = make_response(
-        output.getvalue()
-    )
+    response = make_response(output.getvalue())
 
     response.headers["Content-Type"] = (
         "text/csv; charset=utf-8"
@@ -328,11 +367,13 @@ def download_report(run_id):
         f'specguard_comparison_{run_id}.csv"'
     )
 
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
     return response
 
 
 # ---------------------------------------------------------
-# FILE TOO LARGE
+# ERRORS
 # ---------------------------------------------------------
 
 @app.errorhandler(413)
@@ -351,6 +392,8 @@ if __name__ == "__main__":
     create_database()
 
     app.run(
-        debug=True,
+        host="127.0.0.1",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False,
         use_reloader=False
     )

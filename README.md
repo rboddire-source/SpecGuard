@@ -428,6 +428,13 @@ Potential extensions include:
 The current version intentionally prioritizes a small, understandable, testable system over unnecessary complexity.
 
 ---
+### Security and Deployment
+
+The Flask application is currently intended for local development and demonstration. Its saved comparison history and report routes do not have user authentication or access controls.
+
+Do not deploy the Flask application publicly with confidential requirements until appropriate authentication and authorization are implemented.
+
+The GitHub Pages demo runs separately in the browser and stores history using browser local storage.
 
 ## Author
 
