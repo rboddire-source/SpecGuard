@@ -1,3 +1,4 @@
+from comparison import extract_requirement_id
 from comparison import compare_requirements, get_change_details
 
 
@@ -110,3 +111,50 @@ def test_word_change_details():
 
     assert result["removed"] == ["weekly"]
     assert result["added"] == ["daily"]
+
+
+def test_extract_requirement_id_new():
+    assert extract_requirement_id("REQ-101: Password") == "REQ-101"
+    assert extract_requirement_id("req-205: Login") == "REQ-205"
+    assert extract_requirement_id("Users must log in") is None
+
+
+def test_same_id_different_wording_new():
+    old = ["REQ-101: Password must contain 8 characters."]
+    new = ["REQ-101: Authentication credentials require 12 characters."]
+
+    result = compare_requirements(old, new)
+
+    assert len(result) == 1
+    assert result[0]["status"] == "CHANGED"
+
+
+def test_different_ids_not_matched_new():
+    old = ["REQ-101: Password must contain 8 characters."]
+    new = ["REQ-202: Password must contain 8 characters."]
+
+    result = compare_requirements(old, new)
+
+    assert sorted(item["status"] for item in result) == [
+        "ADDED", "REMOVED"
+    ]
+
+
+def test_same_id_unchanged_new():
+    old = ["REQ-101: Password must contain 8 characters."]
+    new = ["req-101:  password must contain 8 characters."]
+
+    result = compare_requirements(old, new)
+
+    assert len(result) == 1
+    assert result[0]["status"] == "UNCHANGED"
+
+
+def test_no_id_similarity_matching_new():
+    old = ["Password must contain 8 characters."]
+    new = ["Password must contain 12 characters."]
+
+    result = compare_requirements(old, new)
+
+    assert len(result) == 1
+    assert result[0]["status"] == "CHANGED"

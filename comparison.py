@@ -1,6 +1,5 @@
 
 from difflib import SequenceMatcher, ndiff
-from collections import Counter
 import re
 
 
@@ -12,8 +11,18 @@ def normalize_text(text):
     return " ".join(text.lower().split())
 
 
+def extract_requirement_id(text):
+    """Extract a requirement ID such as REQ-101."""
+    match = re.match(
+        r"^\s*(REQ-\d+)\s*:",
+        text,
+        re.IGNORECASE
+    )
+    return match.group(1).upper() if match else None
+
+
 def similarity(text1, text2):
-    """Return similarity score between 0 and 1."""
+    """Return character similarity between 0 and 1."""
     return SequenceMatcher(
         None,
         normalize_text(text1),
@@ -50,7 +59,7 @@ def extract_numbers(text):
 
 
 def important_words(text):
-    """Extract useful words for comparing requirements."""
+    """Extract meaningful words for comparison."""
     stopwords = {
         "the", "a", "an", "is", "are", "be",
         "to", "of", "in", "on", "for", "and",
@@ -66,7 +75,7 @@ def important_words(text):
 
 
 def word_overlap(text1, text2):
-    """Calculate overlap of meaningful words."""
+    """Calculate meaningful-word overlap."""
     words1 = important_words(text1)
     words2 = important_words(text2)
 
@@ -96,6 +105,12 @@ def compare_requirements(old_requirements, new_requirements):
 
     Returns statuses:
     UNCHANGED, CHANGED, REMOVED, ADDED.
+
+    Matching priority:
+    1. Unique requirement IDs
+    2. Identical normalized text
+    3. Similarity-based matching
+    4. Remaining removals and additions
     """
 
     results = []
@@ -103,15 +118,80 @@ def compare_requirements(old_requirements, new_requirements):
     matched_old = set()
     matched_new = set()
 
-    # PASS 1: Match identical requirements,
-    # even if capitalization or spacing differs.
+    # -----------------------------------------
+    # PASS 0: Match unique requirement IDs
+    # -----------------------------------------
+
+    old_ids = {}
+    new_ids = {}
+
+    for i, text in enumerate(old_requirements):
+        req_id = extract_requirement_id(text)
+        if req_id:
+            old_ids.setdefault(req_id, []).append(i)
+
+    for i, text in enumerate(new_requirements):
+        req_id = extract_requirement_id(text)
+        if req_id:
+            new_ids.setdefault(req_id, []).append(i)
+
+    for req_id in old_ids.keys() & new_ids.keys():
+
+        # Skip ambiguous duplicate IDs.
+        if len(old_ids[req_id]) != 1:
+            continue
+
+        if len(new_ids[req_id]) != 1:
+            continue
+
+        old_index = old_ids[req_id][0]
+        new_index = new_ids[req_id][0]
+
+        old_text = old_requirements[old_index]
+        new_text = new_requirements[new_index]
+
+        unchanged = (
+            normalize_text(old_text)
+            == normalize_text(new_text)
+        )
+
+        results.append({
+            "status": "UNCHANGED" if unchanged else "CHANGED",
+            "old": old_text,
+            "new": new_text,
+            "similarity": (
+                1.0 if unchanged
+                else round(combined_similarity(old_text, new_text), 2)
+            ),
+            "changes": (
+                {"removed": [], "added": []}
+                if unchanged
+                else get_change_details(old_text, new_text)
+            )
+        })
+
+        matched_old.add(old_index)
+        matched_new.add(new_index)
+
+    # -----------------------------------------
+    # PASS 1: Match identical requirements
+    # -----------------------------------------
+
     new_lookup = {}
 
     for new_index, new_text in enumerate(new_requirements):
+
+        if new_index in matched_new:
+            continue
+
         key = normalize_text(new_text)
         new_lookup.setdefault(key, []).append(new_index)
 
     for old_index, old_text in enumerate(old_requirements):
+
+        if old_index in matched_old:
+            continue
+
         key = normalize_text(old_text)
 
         if key not in new_lookup:
@@ -140,15 +220,32 @@ def compare_requirements(old_requirements, new_requirements):
             matched_new.add(new_index)
             break
 
-    # PASS 2: Find candidate changed requirements.
+    # -----------------------------------------
+    # PASS 2: Match similar requirements
+    # -----------------------------------------
+
     candidates = []
 
     for old_index, old_text in enumerate(old_requirements):
+
         if old_index in matched_old:
             continue
 
         for new_index, new_text in enumerate(new_requirements):
+
             if new_index in matched_new:
+                continue
+
+            old_id = extract_requirement_id(old_text)
+            new_id = extract_requirement_id(new_text)
+
+            # Never match two different explicit IDs.
+            if old_id and new_id and old_id != new_id:
+                continue
+
+            # Don't match an ID-bearing requirement
+            # against an ID-less requirement.
+            if bool(old_id) != bool(new_id):
                 continue
 
             score = combined_similarity(old_text, new_text)
@@ -162,6 +259,7 @@ def compare_requirements(old_requirements, new_requirements):
     candidates.sort(reverse=True)
 
     for score, old_index, new_index in candidates:
+
         if old_index in matched_old:
             continue
 
@@ -185,8 +283,12 @@ def compare_requirements(old_requirements, new_requirements):
         matched_old.add(old_index)
         matched_new.add(new_index)
 
-    # PASS 3: Identify removed requirements.
+    # -----------------------------------------
+    # PASS 3: Identify removed requirements
+    # -----------------------------------------
+
     for old_index, old_text in enumerate(old_requirements):
+
         if old_index not in matched_old:
             results.append({
                 "status": "REMOVED",
@@ -199,8 +301,12 @@ def compare_requirements(old_requirements, new_requirements):
                 }
             })
 
-    # PASS 4: Identify added requirements.
+    # -----------------------------------------
+    # PASS 4: Identify added requirements
+    # -----------------------------------------
+
     for new_index, new_text in enumerate(new_requirements):
+
         if new_index not in matched_new:
             results.append({
                 "status": "ADDED",
